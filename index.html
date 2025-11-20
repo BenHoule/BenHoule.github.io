@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Godot Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="canvas">
+            Your browser does not support the canvas tag.
+        </canvas>
+        <div id="status">
+            <div id="status-progress-outer">
+                <div id="status-progress-inner"></div>
+            </div>
+            <div id="status-indeterminate">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <div id="status-notice"></div>
+        </div>
+    </div>
+
+    <script>
+        // Status handling functions
+        const statusProgress = document.getElementById('status-progress-inner');
+        const statusProgressOuter = document.getElementById('status-progress-outer');
+        const statusIndeterminate = document.getElementById('status-indeterminate');
+        const statusNotice = document.getElementById('status-notice');
+
+        function setStatusMode(mode) {
+            if (mode === 'hidden') {
+                document.getElementById('status').style.display = 'none';
+            } else {
+                document.getElementById('status').style.display = 'flex';
+                statusProgressOuter.style.display = mode === 'progress' ? 'block' : 'none';
+                statusIndeterminate.style.display = mode === 'indeterminate' ? 'block' : 'none';
+            }
+        }
+
+        function setStatusNotice(text) {
+            statusNotice.textContent = text;
+        }
+
+        function displayFailureNotice(err) {
+            const msg = err.message || err;
+            console.error(msg);
+            setStatusNotice(msg);
+            setStatusMode('notice');
+        }
+
+        // Check if Godot Engine is available
+        if (typeof Engine !== 'undefined') {
+            // Godot engine configuration
+            const GODOT_CONFIG = {
+                "args": [],
+                "canvasResizePolicy": 2,
+                "executable": "index",
+                "experimentalVK": false,
+                "focusCanvas": true,
+                "gdextensionLibs": []
+            };
+
+            const engine = new Engine(GODOT_CONFIG);
+
+            // Initialize and start the game
+            (async function() {
+                setStatusMode('indeterminate');
+                setStatusNotice('Loading...');
+                
+                try {
+                    await engine.init('index.wasm');
+                    setStatusMode('progress');
+                    setStatusNotice('Loading game...');
+                    
+                    await engine.preloadFile('index.pck');
+                    
+                    setStatusMode('indeterminate');
+                    setStatusNotice('Starting...');
+                    
+                    await engine.start({ 'canvas': document.getElementById('canvas') });
+                    
+                    setStatusMode('hidden');
+                } catch (err) {
+                    displayFailureNotice(err);
+                }
+            })();
+        } else {
+            // Placeholder for when Godot files are not yet present
+            setStatusMode('notice');
+            setStatusNotice('Ready for Godot game files. Place index.wasm, index.pck, and index.js in the root directory.');
+        }
+    </script>
+    
+    <!-- Load this script when you have the Godot engine files -->
+    <!-- <script src="index.js"></script> -->
+</body>
+</html>
